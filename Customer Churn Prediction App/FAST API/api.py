@@ -3,7 +3,6 @@ import json
 import os
 from functools import lru_cache
 from typing import Dict, List, Literal, Optional
-
 import joblib
 import numpy as np
 import pandas as pd
@@ -11,6 +10,8 @@ from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
 
 BASE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(BASE)
+MODEL_DIRS = [os.path.join(BASE, "models"), BASE, os.path.join(ROOT, "MODEL FILE"), os.path.join(ROOT, "models")]
 UPLOADED_MODEL_NAME = "Uploaded Model (modelll.pkl)"
 DEFAULT_MODEL = "Random Forest (Tuned)"
 
@@ -63,13 +64,23 @@ class BatchRequest(BaseModel):
 
 def available_models() -> Dict[str, str]:
     found: Dict[str, str] = {}
-    for p in sorted(glob.glob(os.path.join(BASE, "models", "*.pkl"))):
-        name = os.path.basename(p)[:-4].replace("_", " ").replace("Random Forest Tuned", "Random Forest (Tuned)")
-        found[name] = p
-    uploaded = os.path.join(BASE, "modelll.pkl")
-    if os.path.exists(uploaded):
-        found[UPLOADED_MODEL_NAME] = uploaded
+    for d in MODEL_DIRS:
+        for p in sorted(glob.glob(os.path.join(d, "*.pkl"))):
+            base = os.path.basename(p)[:-4]
+            if base == "modelll":
+                name = UPLOADED_MODEL_NAME
+            else:
+                name = base.replace("_", " ").replace("Random Forest Tuned", "Random Forest (Tuned)")
+            found.setdefault(name, p)
     return found
+
+
+def metrics_file() -> Optional[str]:
+    for d in MODEL_DIRS:
+        p = os.path.join(d, "metrics.json")
+        if os.path.exists(p):
+            return p
+    return None
 
 
 @lru_cache(maxsize=8)
@@ -80,7 +91,7 @@ def _load(path: str):
 def get_model(name: Optional[str]):
     models = available_models()
     if not models:
-        raise HTTPException(status_code=503, detail="No model files found. Place modelll.pkl next to api.py.")
+        raise HTTPException(status_code=503, detail="No model files found. Place modelll.pkl in the MODEL FILE folder.")
     if name is None:
         name = DEFAULT_MODEL if DEFAULT_MODEL in models else next(iter(models))
     if name not in models:
@@ -186,8 +197,8 @@ def predict_batch(req: BatchRequest, model: Optional[str] = Query(None, descript
 @app.get("/feature-importance", tags=["Models"])
 def feature_importance(model: Optional[str] = Query(None), top: int = Query(10, ge=1, le=50)):
     name, pipe = get_model(model)
-    saved_path = os.path.join(BASE, "models", "metrics.json")
-    if os.path.exists(saved_path):
+    saved_path = metrics_file()
+    if saved_path:
         with open(saved_path) as f:
             saved = json.load(f).get("importance", {}).get(name)
         if saved:
@@ -201,8 +212,8 @@ def feature_importance(model: Optional[str] = Query(None), top: int = Query(10, 
 
 @app.get("/metrics", tags=["Models"])
 def metrics(model: Optional[str] = Query(None, description="Leave empty to get all models")):
-    path = os.path.join(BASE, "models", "metrics.json")
-    if os.path.exists(path):
+    path = metrics_file()
+    if path:
         with open(path) as f:
             raw = json.load(f)["metrics"]
         data = {k: {m: v[m] for m in METRIC_KEYS} for k, v in raw.items()}
