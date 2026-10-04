@@ -2,6 +2,9 @@
 
 An end-to-end machine learning project that predicts whether a customer will churn (leave a subscription service). It includes data cleaning, exploratory data analysis, four trained models, hyperparameter tuning, an interactive Streamlit dashboard and a FastAPI REST service.
 
+LIVE DEMO APP :-
+https://customer-churn-prediction-112.streamlit.app/
+
 
 ## Features
 
