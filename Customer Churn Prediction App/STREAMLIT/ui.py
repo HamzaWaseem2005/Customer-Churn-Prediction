@@ -1,7 +1,6 @@
 import glob
 import json
 import os
-
 import joblib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,6 +11,9 @@ import streamlit as st
 st.set_page_config(page_title="Customer Churn Predictor", page_icon="📉", layout="wide")
 
 BASE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(BASE)
+MODEL_DIRS = [os.path.join(BASE, "models"), BASE, os.path.join(ROOT, "MODEL FILE"), os.path.join(ROOT, "models")]
+DATA_DIRS = [os.path.join(BASE, "data"), os.path.join(ROOT, "DATASET"), os.path.join(ROOT, "data")]
 
 NOTEBOOK_METRICS = {
     "Logistic Regression": {"Accuracy": 0.8723, "Precision": 0.9992, "Recall": 0.8714, "F1-score": 0.9310,
@@ -27,13 +29,15 @@ METRIC_COLS = ["Accuracy", "Precision", "Recall", "F1-score", "ROC-AUC"]
 
 
 def available_models():
-    """Return {display name: file path} for every model found."""
     found = {}
-    for p in sorted(glob.glob(os.path.join(BASE, "models", "*.pkl"))):
-        name = os.path.basename(p)[:-4].replace("_", " ").replace("Random Forest Tuned", "Random Forest (Tuned)")
-        found[name] = p
-    if os.path.exists(os.path.join(BASE, "modelll.pkl")):
-        found["Uploaded Model (modelll.pkl)"] = os.path.join(BASE, "modelll.pkl")
+    for d in MODEL_DIRS:
+        for p in sorted(glob.glob(os.path.join(d, "*.pkl"))):
+            base = os.path.basename(p)[:-4]
+            if base == "modelll":
+                name = "Uploaded Model (modelll.pkl)"
+            else:
+                name = base.replace("_", " ").replace("Random Forest Tuned", "Random Forest (Tuned)")
+            found.setdefault(name, p)
     return found
 
 
@@ -48,8 +52,9 @@ def load_data(path):
 
 
 def load_metrics():
-    p = os.path.join(BASE, "models", "metrics.json")
-    if os.path.exists(p):
+    p = next((os.path.join(d, "metrics.json") for d in MODEL_DIRS
+              if os.path.exists(os.path.join(d, "metrics.json"))), None)
+    if p:
         with open(p) as f:
             d = json.load(f)
         m = {k: {**{c: v[c] for c in METRIC_COLS}, "cm": v.get("confusion_matrix")} for k, v in d["metrics"].items()}
@@ -58,7 +63,6 @@ def load_metrics():
 
 
 def get_importance(pipe, name, saved):
-    """Feature importance (tree models) or absolute coefficients (logistic regression)."""
     if name in saved:
         return pd.Series(saved[name]).sort_values(ascending=False)
     try:
@@ -82,16 +86,15 @@ def risk_level(p):
 
 
 def risk_factors(r):
-    """Simple explanations based on the EDA findings in the notebook."""
     f = []
     if r["Contract Length"] == "Monthly":
         f.append("Monthly contract: monthly subscribers showed the highest churn in the EDA.")
     if r["Support Calls"] >= 6:
-        f.append("High number of support calls: strongest positive correlation with churn (~0.57).")
+        f.append("High number of support calls: strongest positive correlation with churn.")
     if r["Payment Delay"] >= 15:
-        f.append("Long payment delay: positive correlation with churn (~0.31).")
+        f.append("Long payment delay: positive correlation with churn.")
     if r["Total Spend"] < 400:
-        f.append("Low total spend: higher-spending customers are retained more often (~ -0.43).")
+        f.append("Low total spend: higher-spending customers are retained more often.")
     if r["Tenure"] < 12:
         f.append("Short tenure: newer customers have a higher risk of leaving.")
     return f or ["No major risk factors detected."]
@@ -111,7 +114,7 @@ page = st.sidebar.radio("Navigation", ["🔮 Prediction", "📊 Data Visualizati
 
 models = available_models()
 if not models:
-    st.error("No model found. Place `modelll.pkl` next to app.py.")
+    st.error("No model found. Place modelll.pkl in the MODEL FILE folder (or next to app.py).")
     st.stop()
 default = "Random Forest (Tuned)" if "Random Forest (Tuned)" in models else list(models)[0]
 model_name = st.sidebar.selectbox("Select model", list(models), index=list(models).index(default))
@@ -175,14 +178,13 @@ if page.startswith("🔮"):
 
 elif page.startswith("📊"):
     st.title("Data Visualization")
-    data_dir = os.path.join(BASE, "data")
-    csvs = glob.glob(os.path.join(data_dir, "*.csv")) if os.path.isdir(data_dir) else []
+    csvs = [f for d in DATA_DIRS for f in glob.glob(os.path.join(d, "*.csv"))]
     df = load_data(csvs[0]) if csvs else None
     if df is None:
         up = st.file_uploader("Upload the dataset CSV", type="csv")
         df = pd.read_csv(up) if up else None
     if df is None:
-        st.info("A dataset is required for the charts (put it in the data/ folder or upload it).")
+        st.info("A dataset is required for the charts (put it in the DATASET folder or upload it).")
         st.stop()
 
     df = df.dropna(subset=["Churn"])
