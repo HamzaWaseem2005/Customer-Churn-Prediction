@@ -4,7 +4,31 @@ An end-to-end machine learning project that predicts whether a customer will chu
 
 LIVE DEMO APP LINK :-
 https://customer-churn-prediction-112.streamlit.app/
+## 📸 Screenshots
 
+
+| 
+
+![Screenshot 1](Customer%20Churn%20Prediction%20App/UI%20IMAGES/Screenshot%202026-10-04%20150833.png)
+
+ | 
+
+![Screenshot 2](Customer%20Churn%20Prediction%20App/UI%20IMAGES/Screenshot%202026-10-04%20150844%20-%20Copy.png)
+
+ | 
+
+![Screenshot 3](Customer%20Churn%20Prediction%20App/UI%20IMAGES/Screenshot%202026-10-04%20150854.png)
+
+ |
+| 
+
+![Screenshot 4](Customer%20Churn%20Prediction%20App/UI%20IMAGES/Screenshot%202026-10-04%20150912.png)
+
+ | 
+
+![Screenshot 5](Customer%20Churn%20Prediction%20App/UI%20IMAGES/Screenshot%202026-10-04%20150924.png)
+
+ | |
 
 ## Features
 
