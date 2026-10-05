@@ -17,7 +17,7 @@ https://customer-churn-prediction-112.streamlit.app/
 ## Dataset
 
 - File: customer_churn_dataset-training-master.csv
-- Source: [Add the Kaggle dataset link here]
+- Source: https://www.kaggle.com/datasets/muhammadshahidazeem/customer-churn-dataset
 - Size: 102,828 rows and 12 columns (102,827 rows after cleaning)
 - Target: Churn (1 = churned, 0 = retained)
 - Features: Age, Gender, Tenure, Usage Frequency, Support Calls, Payment Delay, Subscription Type, Contract Length, Total Spend, Last Interaction
@@ -68,8 +68,8 @@ Note: because the dataset is heavily imbalanced, accuracy alone can be misleadin
 ## Installation
 
 ```bash
-git clone https://github.com/[your-username]/[your-repo-name].git
-cd [your-repo-name]
+git clone https://github.com/HamzaWaseem2005/Customer-Churn-Prediction.git
+cd Customer-Churn-Prediction
 python -m pip install -r requirements.txt
 ```
 
